@@ -440,6 +440,12 @@ export async function connect(address?: string) {
     let packet: MeshPacket
     if (id) packet = packets.upsert({ id, data })
     if (e.from && data) {
+    
+      //for incoming traceroutes - route reverse workaround
+      if (data?.route && (!data.routeBack || data.routeBack.length === 0)) {
+        return
+      }
+         
       let node = nodes.upsert({ num: e.from, trace: data })
       if (routeCache) routeCache.assign({ [e.from]: data })
       if (packet?.viaMqtt === false) sendToMeshMap({ num: e.from, trace: data }, node, packet)

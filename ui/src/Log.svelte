@@ -146,8 +146,15 @@
               {packet?.data?.variant?.value}
             </div>
           {:else if packet.data?.$typeName == 'meshtastic.RouteDiscovery'}
+            {@const route = packet?.data?.route || []}
+            {@const routeBack = packet?.data?.routeBack || []}
+            {@const shouldReverse = routeBack.length === 0}          
             <div class="bg-purple-800/60 rounded px-1 my-0.5 text-xs ring-0 text-white/80 mx-2 w-fit">
-              {[packet.to, ...packet?.data?.route, packet.from].map((id) => getNodeNameById(id)).join(' -> ')}
+              {#if shouldReverse}
+              {[packet.from, ...route, packet.to].map((id) => getNodeNameById(id)).join(' -> ')}
+              {:else}
+              {[packet.to, ...route, packet.from].map((id) => getNodeNameById(id)).join(' -> ')}
+              {/if}
             </div>
           {:else if packet.neighbors?.length}
             <div class="bg-fuchsia-800/60 rounded px-1 my-0.5 text-xs ring-0 text-white/80 mx-2 w-fit">
