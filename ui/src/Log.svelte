@@ -4,6 +4,8 @@
   import { getNodeById, getNodeName, getNodeNameById, scrollToBottom, testPacket } from './lib/util'
   import Modal from './lib/Modal.svelte'
   import { messageDestination } from './Message.svelte'
+  import { replyToId } from './Message.svelte'
+  
   import OpenLayersMap from './lib/OpenLayersMap.svelte'
   import { tick } from 'svelte'
   import { getSvgUri } from './Map.svelte'
@@ -18,6 +20,40 @@
     if (!includeTx && packet.data?.$typeName == 'meshtastic.Routing') return false
     return true
   }
+
+  function getReplyText(packet: MeshPacket) {
+  let replyId: number | undefined;
+  
+  if (packet.payloadVariant?.case === 'decoded' && packet.payloadVariant.value) {
+    replyId = packet.payloadVariant.value.replyId;
+  }
+  
+  if (!replyId) return null;
+  
+  const originalPacket = $packets?.find(p => p.id === replyId);
+
+  if (originalPacket?.message) {
+    const nodeName = getNodeNameById(originalPacket.from);
+    const messageText = originalPacket.message.readable ?? originalPacket.message.data;
+    
+    return `${nodeName}: ${messageText}`;
+  }
+  return null;
+ }
+
+  function getReplyId(packet: MeshPacket): number | undefined {
+    if (packet.payloadVariant?.case === 'decoded' && packet.payloadVariant.value) {
+      return packet.payloadVariant.value.replyId;
+    }
+    return undefined;
+  }  
+
+  function replyToMessage(packet: MeshPacket) {
+     $messageDestination = packet.channel
+     $replyToId = packet.id;
+  }
+
+
 
   let packetsDiv: HTMLDivElement
   let includeTx = false
@@ -164,12 +200,27 @@
         </div>
       {/if}
       {#if packet.message?.show}
+        {@const replyId = getReplyId(packet)}
+        {@const replyText = getReplyText(packet)}
         <div class="bg-blue-500/20 rounded px-1 ring-1 my-0.5 text-sm w-fit">
+          {#if replyId}
+          <div class="text-xs text-gray-400 italic mb-1">
+            <span class="font-bold text-white">“</span> {replyText || `ID: ${replyId}`}
+          </div>
+        {/if}
           {#if packet.to == broadcastId}
             <button on:click={() => ($messageDestination = packet.channel)} class="font-bold text-white">{channels.value[packet.channel]?.settings?.name || 'Primary'}</button>
           {/if}
           <button class="font-bold" on:click={() => ($messageDestination = packet.from)}>{getNodeNameById(packet.from)}:</button>
           {packet.message.readable ?? packet.message.data}
+          
+          <button 
+          class="ml-1 text-sm opacity-70 hover:opacity-100"
+          on:click={() => replyToMessage(packet)}
+          title="Reply to this message"
+        >
+          ↩️
+        </button>
         </div>
       {/if}
       <!-- <div>{JSON.stringify(packet)}</div> -->

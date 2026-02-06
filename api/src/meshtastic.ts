@@ -497,10 +497,14 @@ export async function connect(address?: string) {
   }
 }
 
-export async function send({ message = '', destination, channel, wantAck = true }) {
+export async function send({ message = '', destination, channel, replyToId=0, wantAck = true }) {
   if (connectionStatus.value != 'connected' || !message) return
   message = `${messagePrefix.value || ''} ${message} ${messageSuffix.value || ''}`.trim()
-  console.log('Sending', { message, destination, channel, wantAck })
+  console.log('Sending', { message, replyToId,destination, channel, wantAck })
+  if (replyToId){
+    return connection.sendReply(message, replyToId, destination, wantAck, channel);
+  }
+  else
   return connection.sendText(message, destination, wantAck, channel)
 }
 
