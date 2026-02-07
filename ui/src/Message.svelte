@@ -75,20 +75,25 @@
   <form on:submit|preventDefault={send} class="p-2 flex flex-col gap-1 text-sm">
     <div class="flex gap-1" class:flex-col={$smallMode}>
       <input maxlength={maxLength} bind:this={inputElement} class="input w-full" size="3" type="text" bind:value={message} />
-      <button class="btn">
-        {#if $replyToId}
+      {#if $replyToId}
+      <div class="flex items-center gap-2">
+        <button class="btn">
           Reply
-          <button 
+        </button>
+        <button 
           class="btn bg-red-600 hover:bg-red-700 border-red-700"
           type="button"
           on:click={() => $replyToId = null}
           title="Cancel reply"
-          >
+        >
           ✕
-          </button>
-        {:else}
-          Send
-        {/if}      </button>
+        </button>
+      </div>
+    {:else}
+      <button class="btn">
+        Send
+      </button>
+    {/if}
     </div>
   </form>
 </Card>
