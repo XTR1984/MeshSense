@@ -18,7 +18,7 @@
   $: remainingChars = maxLength - message.length
   $: charCountClass = remainingChars <= 0 ? 'text-red-700' : remainingChars <= 40 ? 'text-yellow-700' : 'text-gray-600'
 
-  $: if (inputElement && $messageDestination) {
+  $: if (inputElement && $messageDestination || $replyToId) {
     inputElement.focus()
   }
 

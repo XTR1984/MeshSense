@@ -51,8 +51,9 @@ createRoutes((app) => {
     let message = req.body.message
     let destination = req.body.destination
     let channel = req.body.channel
+    let replyToId = req.body.replyToId
     let wantAck = req.body.wantAck
-    send({ message, destination, channel, wantAck })
+    send({ message, destination, channel, replyToId, wantAck })
     return res.sendStatus(200)
   })
 

@@ -49,8 +49,8 @@
   }  
 
   function replyToMessage(packet: MeshPacket) {
-     $messageDestination = packet.channel
      $replyToId = packet.id;
+     $messageDestination = packet.channel
   }
 
 
@@ -205,7 +205,7 @@
         <div class="bg-blue-500/20 rounded px-1 ring-1 my-0.5 text-sm w-fit">
           {#if replyId}
           <div class="text-xs text-gray-400 italic mb-1">
-            <span class="font-bold text-white">“</span> {replyText || `ID: ${replyId}`}
+            <span> </span> {replyText || `ID: ${replyId}`}
           </div>
         {/if}
           {#if packet.to == broadcastId}
