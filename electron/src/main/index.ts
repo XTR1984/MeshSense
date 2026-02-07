@@ -19,14 +19,14 @@ let apiProcess: Electron.UtilityProcess
 let apiPort: any = 9999
 
 /** asnyc needed for updateCheckLoop to allow electron to launch main window */
-async function updateCheckLoop() {
+/* async function updateCheckLoop() {
   console.log('[electron] Checking for updates on channel', autoUpdater.channel)
   autoUpdater.checkForUpdates()
   setInterval(() => {
     autoUpdater.checkForUpdates()
   }, 7.2e6)
   // autoUpdater.checkForUpdatesAndNotify({ title: 'MeshSense', body: 'MeshSense has an update!' })
-}
+} */
 
 function createWindow(): void {
   // Create the browser window.
@@ -150,7 +150,7 @@ app.whenReady().then(async () => {
   })
 
   buildMenu()
-  updateCheckLoop()
+  //updateCheckLoop()
   // setTimeout(() => {
   //   autoUpdater.quitAndInstall()
   // }, 3000)
