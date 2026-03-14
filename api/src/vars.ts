@@ -25,6 +25,9 @@ export let automaticTraceroutes = new State<boolean>('automaticTraceroutes', tru
 export let meshSenseNewsDate = new State<number>('meshSenseNewsDate', 0, { persist: true })
 export let pendingTraceroutes = new State<number[]>('pendingTraceroutes', [], { hideLog: true })
 export let meshMapForwarding = new State<boolean>('meshMapForwarding', false, { hideLog: true, persist: true })
+export let messageDestination = new State<number>('messageDestination', 0, { persist: true });
+export let routeDisplayMode = new State<string>('routeDisplayMode', 'all', { persist: true })
+
 
 /** Measured in minutes */
 export let tracerouteRateLimit = new State<number>('tracerouteRateLimit', 60, { persist: true })

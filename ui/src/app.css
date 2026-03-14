@@ -79,8 +79,9 @@ h1 {
 }
 
 .btn-active {
-  @apply px-2 py-0.5 bg-green-500/50 rounded text-blue-100 border-blue-500;
+  @apply px-2 py-0.5 bg-green-500/50 rounded text-white border-blue-500 outline outline-2 outline-cyan-400; 
 }
+
 
 button:hover {
   @apply brightness-110;

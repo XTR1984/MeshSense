@@ -442,7 +442,7 @@ export async function connect(address?: string) {
     if (e.from && data) {
     
       //for incoming traceroutes - route reverse workaround
-      if (data?.route && (!data.routeBack || data.routeBack.length === 0)) {
+      if (data?.route && (!data.snrBack || data.snrBack.length === 0)) {
         return
       }
          

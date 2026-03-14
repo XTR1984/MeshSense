@@ -21,11 +21,11 @@
   import Card from './lib/Card.svelte'
   import { formatTemp, getCoordinates, getNodeName, getNodeNameById, hasAccess, displayFahrenheit, unixSecondsTimeAgo } from './lib/util'
   import Microchip from './lib/icons/Microchip.svelte'
+  import { messageDestination } from 'api/src/vars'  
   import axios from 'axios'
   import Modal from './lib/Modal.svelte'
   import { writable } from 'svelte/store'
   import OpenLayersMap from './lib/OpenLayersMap.svelte'
-  import { messageDestination } from './Message.svelte'
   import { getSvgUri, setPositionMode } from './Map.svelte'
   import ChannelUtilization from './lib/ChannelUtilization.svelte'
   import ObservedRF from './lib/ObservedRF.svelte'
@@ -184,6 +184,55 @@
 
   function toggleSortDirection() {
     $sortDirection = $sortDirection === 'asc' ? 'desc' : 'asc'
+  }
+  function getNodeTitle(node) {
+    if (!node?.trace) return '';
+    
+    const route = node.trace.route || [];
+    const routeBack = node.trace.routeBack || [];
+    const snrTowards = node.trace.snrTowards || [];
+    const snrBack = node.trace.snrBack || [];
+    
+    const formatSnr = (snrValue) => {
+      if (snrValue === undefined || snrValue === null || snrValue === -128) return '(?dB)';
+      return `(${(snrValue / 4).toFixed(2)}dB)`;
+    };
+    
+    let title = `Traceroute ${node.hopsAway == 0 ? 'Direct' : ''}\n`;
+    
+    if (snrBack.length > 0) {
+      // Forward path: from us to destination
+      title += getNodeNameById($myNodeNum);
+      route.forEach((nodeId, index) => {
+        title += ` → ${getNodeNameById(nodeId)} ${formatSnr(snrTowards[index])}`;
+      });
+      title += ` → ${getNodeNameById(node.num)}`;
+      if (snrTowards.length > 0) {
+        title += ` ${formatSnr(snrTowards[snrTowards.length - 1])}`;
+      }
+      
+      // Return path: from destination back to us
+      title += `\n${getNodeNameById(node.num)}`;
+      routeBack.forEach((nodeId, index) => {
+        title += ` → ${getNodeNameById(nodeId)} ${formatSnr(snrBack[index])}`;
+      });
+      title += ` → ${getNodeNameById($myNodeNum)}`;
+      if (snrBack.length > 0) {
+        title += ` ${formatSnr(snrBack[snrBack.length - 1])}`;
+      }
+    } 
+    else {
+      title += getNodeNameById($myNodeNum);
+      route.forEach((nodeId, index) => {
+        title += ` → ${getNodeNameById(nodeId)} ${formatSnr(snrTowards[index])}`;
+      });
+      title += ` → ${getNodeNameById(node.num)}`;
+      if (snrTowards.length > 0) {
+        title += ` ${formatSnr(snrTowards[snrTowards.length - 1])}`;
+      }
+    }
+    
+    return title;
   }
 </script>
 
@@ -386,7 +435,7 @@
                   class="{node.hopsAway == 0 || node.trace?.route ? 'border bg-blue-600/30' : ''} px-0.5 rounded-md border-blue-600/80 {$pendingTraceroutes.includes(node.num)
                     ? 'hue-rotate-90 animate-pulse'
                     : ''}"
-                  title="Traceroute {node.hopsAway == 0 ? 'Direct' : ''}{node?.trace ? [$myNodeNum, ...node?.trace?.route, node?.num].map((id) => getNodeNameById(id)).join(' -> ') : ''}"
+                  title={getNodeTitle(node)}
                   on:click={() => axios.post('/traceRoute', { destination: node.num })}>↯</button
                 >
               {:else if $hasAccess}

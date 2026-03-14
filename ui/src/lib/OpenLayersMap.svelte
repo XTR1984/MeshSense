@@ -74,6 +74,19 @@
   // 	})
   // }
 
+ export function removeLayers(layerNames) {
+  if (!Array.isArray(layerNames)) {
+    layerNames = [layerNames];
+  }
+  
+  layerNames.forEach(name => {
+    if (layers[name]) {
+      map.removeLayer(layers[name]);
+      delete layers[name];
+    }
+  });
+}
+
   export function plotPoints(layerName: string, data: { lat: number; lon: number; icon: string; description: string }[]) {
     if (layers[layerName]) map.removeLayer(layers[layerName])
 
@@ -119,8 +132,11 @@
     map.addLayer(layers[layerName])
   }
 
-  export function plotLines(layerName: string, data: number[][][]) {
+  export function plotLines(layerName: string, data: number[][][], lineStyle?: any) {
     if (layers[layerName]) map.removeLayer(layers[layerName])
+
+    const defaultStyle = { 'stroke-width': 4, 'stroke-color': 'rgba(50,50,150, 0.6)' }
+    const style = lineStyle || defaultStyle
 
     // console.log('[OLM] plotLines', data)
     layers[layerName] = new VectorLayer({
@@ -134,7 +150,7 @@
           return feature
         })
       }),
-      style: { 'stroke-width': 4, 'stroke-color': 'rgba(50,50,150, 0.6)' },
+      style: style,
 
       renderBuffer: 100000,
       updateWhileAnimating: true,

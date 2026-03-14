@@ -1,15 +1,15 @@
 <script lang="ts" context="module">
   import { writable } from 'svelte/store'
-  export let messageDestination = writable(0)
   export let replyToId = writable<number | null>(null) 
 </script>
 
 <script lang="ts">
-  import { channels, messagePrefix, messageSuffix } from 'api/src/vars'
+  import { channels, messagePrefix, messageSuffix, messageDestination } from 'api/src/vars'
   import Card from './lib/Card.svelte'
   import { filteredNodes, smallMode } from './Nodes.svelte'
   import axios from 'axios'
   import { getNodeName } from './lib/util'
+
 
   let inputElement: HTMLInputElement
   let message = ''
@@ -46,6 +46,9 @@
 
     cancelReply();
   }
+
+  
+
 </script>
 
 <Card class="shrink-0">
@@ -55,7 +58,9 @@
       <div class="text-xs {charCountClass}">{remainingChars}</div>
     {/if}
 
-    <select bind:value={$messageDestination} class="input font-normal text-sm border border-blue-500/50 !bg-blue-950" name="" id="">
+    <select bind:value={$messageDestination} class="input font-normal text-sm border border-blue-500/50 !bg-blue-950" name="" id=""
+        on:change={(e) => $messageDestination = Number(e.currentTarget.value)}
+      >
       <option disabled>== Channels ==</option>
       {#each $channels as channel}
         {#if channel.role != 'DISABLED'}

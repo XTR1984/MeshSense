@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { broadcastId, channels, myNodeNum, nodes, packets, version, type MeshPacket } from 'api/src/vars'
+  import { broadcastId, channels, myNodeNum, nodes, packets, version, type MeshPacket, messageDestination} from 'api/src/vars'
   import Card from './lib/Card.svelte'
   import { getNodeById, getNodeName, getNodeNameById, scrollToBottom, testPacket } from './lib/util'
   import Modal from './lib/Modal.svelte'
-  import { messageDestination } from './Message.svelte'
   import { replyToId } from './Message.svelte'
   
   import OpenLayersMap from './lib/OpenLayersMap.svelte'
@@ -50,7 +49,7 @@
 
   function replyToMessage(packet: MeshPacket) {
      $replyToId = packet.id;
-     $messageDestination = packet.channel
+     $messageDestination = packet.channel;
   }
 
 
@@ -181,17 +180,55 @@
             <div class="bg-pink-800/40 rounded px-1 my-0.5 text-xs ring-0 text-white/80 mx-2 w-fit">
               {packet?.data?.variant?.value}
             </div>
-          {:else if packet.data?.$typeName == 'meshtastic.RouteDiscovery'}
+            {:else if packet.data?.$typeName == 'meshtastic.RouteDiscovery'}
             {@const route = packet?.data?.route || []}
             {@const routeBack = packet?.data?.routeBack || []}
-            {@const shouldReverse = routeBack.length === 0}          
+            {@const snrTowards = packet?.data?.snrTowards || []}
+            {@const snrBack = packet?.data?.snrBack || []}
+            
+            <!-- shouldReverse = true для входящих traceroute пакетов (когда routeBack пустой) -->
+            {@const shouldReverse = snrBack.length === 0}
+            
+            <!-- Function to format SNR -->
+            {@const formatSnr = (snrValue) => {
+                if (snrValue === undefined || snrValue === null || snrValue === -128) // INT8_MIN
+                    return '(?dB)';
+                return `(${(snrValue / 4).toFixed(2)}dB)`;
+            }}
+            
             <div class="bg-purple-800/60 rounded px-1 my-0.5 text-xs ring-0 text-white/80 mx-2 w-fit">
-              {#if shouldReverse}
-              {[packet.from, ...route, packet.to].map((id) => getNodeNameById(id)).join(' -> ')}
-              {:else}
-              {[packet.to, ...route, packet.from].map((id) => getNodeNameById(id)).join(' -> ')}
-              {/if}
+                {#if shouldReverse}
+                    <!-- INCOMING TRACEROUTE (from someone to us) -->
+                    <div>
+                        {getNodeNameById(packet.from)}
+                        {#each route as nodeId, index}
+                            → {getNodeNameById(nodeId)} {formatSnr(snrTowards[index])}
+                        {/each}
+                        → {getNodeNameById(packet.to)} {#if snrTowards.length > 0}{formatSnr(snrTowards[snrTowards.length - 1])}{/if}
+                    </div>
+                    
+                {:else}
+                    <!-- COMPLETED TRACEROUTE (our trace came back) -->
+                    <!-- Forward path: from us to destination -->
+                    <div>
+                        {getNodeNameById(packet.to)}
+                        {#each route as nodeId, index}
+                            → {getNodeNameById(nodeId)} {formatSnr(snrTowards[index])}
+                        {/each}
+                        → {getNodeNameById(packet.from)} {#if snrTowards.length > 0}{formatSnr(snrTowards[snrTowards.length - 1])}{/if}
+                    </div>
+                    
+                    <!-- Return path: from destination back to us -->
+                    <div class="opacity-80">
+                        {getNodeNameById(packet.from)}
+                        {#each routeBack as nodeId, index}
+                            → {getNodeNameById(nodeId)} {formatSnr(snrBack[index])}
+                        {/each}
+                        → {getNodeNameById(packet.to)} {#if snrBack.length > 0}{formatSnr(snrBack[snrBack.length - 1])}{/if}
+                    </div>
+                {/if}
             </div>
+        
           {:else if packet.neighbors?.length}
             <div class="bg-fuchsia-800/60 rounded px-1 my-0.5 text-xs ring-0 text-white/80 mx-2 w-fit">
               {packet.neighbors.map(({ nodeId }) => getNodeNameById(nodeId)).join(', ')}

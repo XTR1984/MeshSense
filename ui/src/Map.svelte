@@ -3,6 +3,8 @@
   export let expandedMap = writable(false)
   export let setPositionMode = writable(false)
   import { generateHexer } from '@bdancer/icon-gaga'
+  import Style from 'ol/style/Style'
+  import Stroke from 'ol/style/Stroke'
 
   export function getSvgUri(name: string) {
     const hexId = parseInt(name).toString(16).padStart(8, '0')
@@ -25,7 +27,7 @@
 </script>
 
 <script lang="ts">
-  import { connectionStatus, myNodeNum, version, type NodeInfo } from 'api/src/vars'
+  import { connectionStatus, myNodeNum, version, type NodeInfo, routeDisplayMode } from 'api/src/vars'
   import { filteredNodes, isInactive, nodeVisibilityMode } from './Nodes.svelte'
   import Card from './lib/Card.svelte'
   import OpenLayersMap from './lib/OpenLayersMap.svelte'
@@ -37,19 +39,63 @@
 
   $: nodesWithCoords = $filteredNodes.filter((n) => !(n.position?.latitudeI == undefined || n.position?.latitudeI == 0) || n.approximatePosition)
 
+  function setRouteMode(mode) {
+    console.log('setRouteMode called with:', mode, 'current:', $routeDisplayMode)
+    $routeDisplayMode = mode
+    // Здесь можно вызвать перерисовку карты
+    plotData();
+  }
+
   function plotData() {
     let myNodeCoords = getCoordinates($myNodeNum)
 
+    if ($routeDisplayMode === 'disable') {
+      ol.removeLayers(['routes-forward','routes-back']);
+    }
+
+
+    if ($routeDisplayMode === 'all' || $routeDisplayMode === 'forward') {
+    if ($routeDisplayMode === 'forward') ol.removeLayers('routes-back');
     ol.plotLines(
-      'routes',
+      'routes-forward',
       nodesWithCoords
         .filter((n) => (n.trace || n.hopsAway == 0) && $nodeVisibilityMode != 'inactive' && !n.trace?.route?.some((routeNodeId) => isInactive(getNodeById(routeNodeId))))
         .map((n) => {
           let list: any[] = [...(n.trace?.route?.map((traceNode) => getCoordinates(traceNode)) || []), getCoordinates(n)]
           if (myNodeCoords[0] && myNodeCoords[1]) list.unshift(myNodeCoords)
           return list.filter((coords) => !(coords[0] == 0 && coords[1] == 0))
-        })
+        }),
+        new Style({
+          stroke: new Stroke({
+          color: 'blue',
+          width: 4
+           })
+        })        
     )
+    }  
+
+    if ($routeDisplayMode === 'all' || $routeDisplayMode === 'back') {
+      if ($routeDisplayMode === 'back') ol.removeLayers('routes-forward');
+      ol.plotLines(
+    'routes-back',
+    nodesWithCoords
+      .filter((n) => n.trace?.snrBack?.length > 0 && $nodeVisibilityMode != 'inactive' && !n.trace?.routeBack?.some((routeNodeId) => isInactive(getNodeById(routeNodeId))))
+      .map((n) => {
+        let routeBackCopy = [...(n.trace?.routeBack || [])];
+        let list: any[] = [...(routeBackCopy.reverse().map((traceNode) => getCoordinates(traceNode)) || []), getCoordinates(n)]
+        if (myNodeCoords[0] && myNodeCoords[1]) list.unshift(myNodeCoords)
+        let result = list.filter((coords) => !(coords[0] == 0 && coords[1] == 0));
+        return result
+      }),
+      new Style({
+      stroke: new Stroke({
+        color: 'rgba(255, 87, 34, 0.8)',
+        width: 4,
+        lineDash: [5, 10] 
+      })
+      })     
+    )    
+    }
 
     ol.plotPoints(
       'nodes',
@@ -81,6 +127,33 @@
 
     <div class="grow">
       <button on:click={() => ($expandedMap = !$expandedMap)} class="btn font-normal text-xs">{$expandedMap ? 'Collapse' : 'Expand'}</button>
+          Routes
+         <button 
+          on:click={() => setRouteMode('all')}
+          class="btn font-normal text-xs {$routeDisplayMode === 'all' ? 'btn-active' : ''}"
+        >
+          All
+        </button>
+        <button 
+          on:click={() => setRouteMode('forward')}
+          class="btn font-normal text-xs {$routeDisplayMode === 'forward' ? 'btn-active' : ''}"
+        >
+          Forward
+        </button>
+        <button 
+          on:click={() => setRouteMode('back')}
+          class="btn font-normal text-xs {$routeDisplayMode === 'back' ? 'btn-active' : ''}"
+        >
+          Back
+        </button>
+        <button 
+          on:click={() => setRouteMode('disable')}
+          class="btn font-normal text-xs {$routeDisplayMode === 'disable' ? 'btn-active' : ''}"
+        >
+          Disable
+        </button>
+
+
     </div>
     <div class="text-xs text-white/50 pr-2">MeshSense {$version}</div>
     <a href="https://affirmatech.com" target="_blank" rel="noopener" class="text-xs text-white/50 pr-2 font-normal">by Affirmatech</a>
