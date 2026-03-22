@@ -180,6 +180,7 @@
             <div class="bg-pink-800/40 rounded px-1 my-0.5 text-xs ring-0 text-white/80 mx-2 w-fit">
               {packet?.data?.variant?.value}
             </div>
+
             {:else if packet.data?.$typeName == 'meshtastic.RouteDiscovery'}
             {@const route = packet?.data?.route || []}
             {@const routeBack = packet?.data?.routeBack || []}
@@ -196,10 +197,24 @@
                 return `(${(snrValue / 4).toFixed(2)}dB)`;
             }}
             
+            <!-- Function to build full path string for tooltip -->
+            {@const buildFullPath = (startNode, nodes, snrValues, endNode) => {
+                let path = `${getNodeNameById(startNode)}`;
+                nodes.forEach((nodeId, index) => {
+                    path += ` → ${getNodeNameById(nodeId)} ${formatSnr(snrValues[index])}`;
+                });
+                path += ` → ${getNodeNameById(endNode)}`;
+                if (snrValues.length > 0) {
+                    path += ` ${formatSnr(snrValues[snrValues.length - 1])}`;
+                }
+                return path;
+            }}
+            
             <div class="bg-purple-800/60 rounded px-1 my-0.5 text-xs ring-0 text-white/80 mx-2 w-fit">
                 {#if shouldReverse}
                     <!-- INCOMING TRACEROUTE (from someone to us) -->
-                    <div>
+                    {@const fullPath = buildFullPath(packet.from, route, snrTowards, packet.to)}
+                    <div class="truncate max-w-[300px] md:max-w-[500px]" title={fullPath}>
                         {getNodeNameById(packet.from)}
                         {#each route as nodeId, index}
                             → {getNodeNameById(nodeId)} {formatSnr(snrTowards[index])}
@@ -209,8 +224,11 @@
                     
                 {:else}
                     <!-- COMPLETED TRACEROUTE (our trace came back) -->
+                    {@const forwardFullPath = buildFullPath(packet.to, route, snrTowards, packet.from)}
+                    {@const returnFullPath = buildFullPath(packet.from, routeBack, snrBack, packet.to)}
+                    
                     <!-- Forward path: from us to destination -->
-                    <div>
+                    <div class="truncate max-w-[300px] md:max-w-[500px]" title={forwardFullPath}>
                         {getNodeNameById(packet.to)}
                         {#each route as nodeId, index}
                             → {getNodeNameById(nodeId)} {formatSnr(snrTowards[index])}
@@ -219,7 +237,7 @@
                     </div>
                     
                     <!-- Return path: from destination back to us -->
-                    <div class="opacity-80">
+                    <div class="truncate max-w-[300px] md:max-w-[500px] opacity-80" title={returnFullPath}>
                         {getNodeNameById(packet.from)}
                         {#each routeBack as nodeId, index}
                             → {getNodeNameById(nodeId)} {formatSnr(snrBack[index])}
@@ -230,8 +248,24 @@
             </div>
         
           {:else if packet.neighbors?.length}
+            {@const formatSnr = (snrValue) => {
+                if (snrValue === undefined || snrValue === null || snrValue === -128) // INT8_MIN
+                    return '(?)';
+                return `${snrValue}`;
+            }}
+            
+            {@const neighborsWithSnr = packet.neighbors.map(neighbor => ({
+                name: getNodeNameById(neighbor.nodeId),
+                snr: neighbor.snr
+            }))}
+            
+            {@const displayText = neighborsWithSnr.map(n => `${n.name} (${formatSnr(n.snr)})`).join(', ')}
+            {@const tooltipText = neighborsWithSnr.map(n => `${n.name}: ${formatSnr(n.snr)}`).join('\n')}
+            
             <div class="bg-fuchsia-800/60 rounded px-1 my-0.5 text-xs ring-0 text-white/80 mx-2 w-fit">
-              {packet.neighbors.map(({ nodeId }) => getNodeNameById(nodeId)).join(', ')}
+                <div class="truncate max-w-[300px] md:max-w-[500px]" title={tooltipText}>
+                    {displayText}
+                </div>
             </div>
           {/if}
         </div>
