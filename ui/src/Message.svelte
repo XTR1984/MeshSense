@@ -4,11 +4,12 @@
 </script>
 
 <script lang="ts">
-  import { channels, messagePrefix, messageSuffix, messageDestination } from 'api/src/vars'
+  import { channels, messagePrefix, messageSuffix, messageDestination, useHomoglyphs   } from 'api/src/vars'
   import Card from './lib/Card.svelte'
   import { filteredNodes, smallMode } from './Nodes.svelte'
   import axios from 'axios'
   import { getNodeName } from './lib/util'
+  import { tick } from 'svelte';
 
 
   let inputElement: HTMLInputElement
@@ -19,8 +20,29 @@
     return new TextEncoder().encode(str).length;
   }
 
+  function replaceWithHomoglyphs(text: string): string {
+    const homoglyphMap: { [key: string]: string } = {
+      'а': 'a', 'А': 'A',
+                'В': 'B',
+      'е': 'e', 'Е': 'E',
+      'ё': 'e', 'Ё': 'E',
+      'и': 'u', 'З': '3',
+      'к': 'k', 'К': 'K',
+                'М': 'M',
+                'Н': 'H',
+      'о': 'o', 'О': 'O',
+      'р': 'p', 'Р': 'P',
+      'с': 'c', 'С': 'C',
+      'т': 'm', 'Т': 'T',
+      'у': 'y',
+      'х': 'x', 'Х': 'X',
+      };
+      return text.split('').map(char => homoglyphMap[char] || char).join('');
+    }  
+    
+  $: processedMessage = useHomoglyphs ? replaceWithHomoglyphs(message) : message;
   $: maxLength = 230 - ($messagePrefix?.length || 0) - ($messageSuffix?.length || 0)
-  $: remainingChars = maxLength - getByteLength(message);
+  $: remainingChars = maxLength - getByteLength(processedMessage);
   $: charCountClass = remainingChars <= 0 ? 'text-red-700' : remainingChars <= 40 ? 'text-yellow-700' : 'text-gray-600'
 
   $: if (inputElement && $messageDestination || $replyToId) {
@@ -32,9 +54,9 @@
   }
 
   function send() {
-    if (!message) return
-
-    let payload = { message }
+    let finalMessage = $useHomoglyphs ? replaceWithHomoglyphs(message) : message;
+    if (!finalMessage) return
+    let payload = { message:finalMessage }
     if (channels.value.some((c) => c.index == $messageDestination)) {
       payload['channel'] = $messageDestination
       if ($replyToId) {
@@ -84,7 +106,7 @@
 
   <form on:submit|preventDefault={send} class="p-2 flex flex-col gap-1 text-sm">
     <div class="flex gap-1" class:flex-col={$smallMode}>
-      <input maxlength={maxLength} bind:this={inputElement} class="input w-full" size="3" type="text" bind:value={message} />
+      <input maxlength={maxLength} bind:this={inputElement} class="input w-full" size="3" type="text" bind:value={message}/>
       {#if $replyToId}
       <div class="flex items-center gap-2">
         <button class="btn">

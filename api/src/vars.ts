@@ -27,6 +27,7 @@ export let pendingTraceroutes = new State<number[]>('pendingTraceroutes', [], { 
 export let meshMapForwarding = new State<boolean>('meshMapForwarding', false, { hideLog: true, persist: true })
 export let messageDestination = new State<number>('messageDestination', 0, { persist: true });
 export let routeDisplayMode = new State<string>('routeDisplayMode', 'all', { persist: true })
+export let useHomoglyphs = new State<boolean>('useHomoglyphs', false, { persist: true })
 
 
 /** Measured in minutes */

@@ -25,7 +25,8 @@
     nodeInactiveTimer,
     myNodeMetadata,
     myNodeNum,
-    meshMapForwarding
+    meshMapForwarding,
+    useHomoglyphs
   } from 'api/src/vars'
   import { hasAccess, userKey, blockUserKey, getNodeById, displayFahrenheit } from './lib/util'
   import { State } from 'api/src/lib/state'
@@ -135,6 +136,11 @@
     <label class="flex gap-2">
       <input type="checkbox" bind:checked={$displayFahrenheit} />
       <div class="font-bold">Display temperature in Fahrenheit</div>
+    </label>
+
+    <label class="flex gap-2">
+      <input type="checkbox" bind:checked={$useHomoglyphs} />
+      <div class="font-bold">Use homoglyphs</div>
     </label>
 
     <label class="flex gap-2">
