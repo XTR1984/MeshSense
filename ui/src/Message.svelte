@@ -14,8 +14,13 @@
   let inputElement: HTMLInputElement
   let message = ''
 
+  function getByteLength(str) {
+    if (!str) return 0;
+    return new TextEncoder().encode(str).length;
+  }
+
   $: maxLength = 230 - ($messagePrefix?.length || 0) - ($messageSuffix?.length || 0)
-  $: remainingChars = maxLength - message.length
+  $: remainingChars = maxLength - getByteLength(message);
   $: charCountClass = remainingChars <= 0 ? 'text-red-700' : remainingChars <= 40 ? 'text-yellow-700' : 'text-gray-600'
 
   $: if (inputElement && $messageDestination || $replyToId) {
