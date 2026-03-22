@@ -2,6 +2,8 @@
   import { writable } from 'svelte/store'
   export let expandedMap = writable(false)
   export let setPositionMode = writable(false)
+  export let setPositionForNodeNum = writable(0)
+  
   import { generateHexer } from '@bdancer/icon-gaga'
   import Style from 'ol/style/Style'
   import Stroke from 'ol/style/Stroke'
@@ -27,22 +29,24 @@
 </script>
 
 <script lang="ts">
-  import { connectionStatus, myNodeNum, version, type NodeInfo, routeDisplayMode } from 'api/src/vars'
+  import { connectionStatus, myNodeNum, version, type NodeInfo, routeDisplayMode, positionOverrides } from 'api/src/vars'
   import { filteredNodes, isInactive, nodeVisibilityMode } from './Nodes.svelte'
   import Card from './lib/Card.svelte'
   import OpenLayersMap from './lib/OpenLayersMap.svelte'
-  import { getCoordinates, getNodeById, getNodeName, getNodeNameById, setPosition } from './lib/util'
+  import { getCoordinates, getNodeById, getNodeName, getNodeNameById, setPosition, OverrideNodeCoordinates } from './lib/util'
   import { showConfigModal, showPage } from './SettingsModal.svelte'
   import { newsVisible } from './News.svelte'
 
   export let ol: OpenLayersMap = undefined
 
-  $: nodesWithCoords = $filteredNodes.filter((n) => !(n.position?.latitudeI == undefined || n.position?.latitudeI == 0) || n.approximatePosition)
+  $: nodesWithCoords = $filteredNodes.filter((n) => {
+  const coords = getCoordinates(n);
+  return coords && coords[0] && coords[1] && coords[0] !== 0 && coords[1] !== 0;
+});
 
   function setRouteMode(mode) {
     console.log('setRouteMode called with:', mode, 'current:', $routeDisplayMode)
     $routeDisplayMode = mode
-    // Здесь можно вызвать перерисовку карты
     plotData();
   }
 
@@ -112,7 +116,7 @@
   }
 
   $: {
-    $myNodeNum, nodesWithCoords
+    $myNodeNum, nodesWithCoords,$positionOverrides
     if (ol) {
       plotData()
     }
@@ -174,15 +178,19 @@
     }}
     onClick={(latitude, longitude) => {
       if ($setPositionMode) {
-        $setPositionMode = false
-        setPosition(latitude, longitude)
+        $setPositionMode = false;
+        if ($setPositionForNodeNum == $myNodeNum ) setPosition(latitude, longitude)
+        else {
+          OverrideNodeCoordinates($setPositionForNodeNum, latitude, longitude);
+          console.log("override position", latitude," ", longitude);
+        }
       }
     }}
     onDarkModeToggle={plotData}
   ></OpenLayersMap>
   {#if $setPositionMode}
     <div class="absolute select-none top-10 left-10 bg-indigo-600/80 text-white p-3 py-1 rounded-lg">
-      Click on a new position for {getNodeNameById($myNodeNum)}
+      Click on a new position for {getNodeNameById($setPositionForNodeNum)}
       <button title="Cancel selecting a position" class="btn btn-sm ml-2 font-bold !text-red-200 !from-rose-500 !to-rose-800 rounded-full" on:click={() => ($setPositionMode = false)}>X</button>
     </div>
   {/if}

@@ -1,5 +1,5 @@
 <script context="module" lang="ts">
-  import { currentTime, myNodeMetadata, myNodeNum, nodeInactiveTimer, nodes, pendingTraceroutes, type NodeInfo } from 'api/src/vars'
+  import { currentTime, myNodeMetadata, myNodeNum, nodeInactiveTimer, nodes, pendingTraceroutes, type NodeInfo, positionOverrides } from 'api/src/vars'
   export let smallMode = writable(false)
   export let selectNodeFilterInput = writable(false)
   export let filteredNodes = writable<NodeInfo[]>([])
@@ -26,7 +26,7 @@
   import Modal from './lib/Modal.svelte'
   import { writable } from 'svelte/store'
   import OpenLayersMap from './lib/OpenLayersMap.svelte'
-  import { getSvgUri, setPositionMode } from './Map.svelte'
+  import { getSvgUri, setPositionMode,setPositionForNodeNum } from './Map.svelte'
   import ChannelUtilization from './lib/ChannelUtilization.svelte'
   import ObservedRF from './lib/ObservedRF.svelte'
 
@@ -35,7 +35,7 @@
   let nodeFilterInput: HTMLInputElement
   export let ol: OpenLayersMap = undefined
   export let filterText = writable('')
-
+  let expandedNodeMenu: number | null = null
 
   $: if ($selectNodeFilterInput) {
     nodeFilterInput.select()
@@ -185,6 +185,31 @@
   function toggleSortDirection() {
     $sortDirection = $sortDirection === 'asc' ? 'desc' : 'asc'
   }
+
+  function toggleNodeMenu(nodeNum: number) {
+    if (expandedNodeMenu === nodeNum) {
+      expandedNodeMenu = null
+    } else {
+      expandedNodeMenu = nodeNum
+    }
+  }
+
+  function hasOverridePosition(nodeNum: number): boolean {
+   return positionOverrides.value.some((n) => n.num == nodeNum);
+  }
+
+  function ClearOverridePosition(nodeNum: number): boolean {
+    let  pos = {
+      num: nodeNum,
+      latitudeI: 0,
+      longitudeI: 0 
+    }  
+    positionOverrides.delete(pos);
+    return true;
+  }  
+  
+
+  
   function getNodeTitle(node) {
     if (!node?.trace) return '';
     
@@ -311,7 +336,7 @@
       <input type="text" placeholder="Node Filter..." bind:value={$filterText} class="input" bind:this={nodeFilterInput}/>
     </div>
   {/if}
-    <div class="p-1 text-sm grid gap-1 overflow-auto h-full content-start">
+    <div class="p-1 text-sm grid gap-1 overflow-visible h-full content-start">
       {#each $filteredNodes as node (node.num)}
         <div
           class:ring-1={node.hopsAway == 0}
@@ -439,7 +464,7 @@
                   on:click={() => axios.post('/traceRoute', { destination: node.num })}>↯</button
                 >
               {:else if $hasAccess}
-                <button title="Set Position" class="rounded-md fill-cyan-400/80 text-lg -mx-0.5" on:click={() => ($setPositionMode = true)}
+                <button title="Set Position" class="rounded-md fill-cyan-400/80 text-lg -mx-0.5" on:click={() => {$setPositionMode = true; $setPositionForNodeNum = $myNodeNum;}}
                   ><svg width="24px" height="24px" viewBox="0 0 512 512" data-name="Layer 1" id="Layer_1" xmlns="http://www.w3.org/2000/svg"
                     ><path
                       d="M321.85,250.69c-4-33.61-30.39-61-65.85-61-36,0-66.34,30.31-66.34,66.34S220,322.34,256,322.34c35.47,0,61.84-27.41,65.85-61a18.39,18.39,0,0,0,.49-5.32A18.71,18.71,0,0,0,321.85,250.69ZM225.12,256c0-39.95,59.88-39.6,61.76,0C285,295.55,225.12,296,225.12,256Z"
@@ -475,6 +500,47 @@
                   >📡
                 </button>
               {/if}
+
+              <div class="relative">
+             {#if $hasAccess &&  node.num != $myNodeNum }
+              <button 
+              class="h-7 w-5 text-sm"
+              on:click={() => toggleNodeMenu(node.num)}
+              title="More actions"
+             >⚙️</button>
+              {/if}
+                    
+                    {#if expandedNodeMenu === node.num}
+                      <div class="absolute right-0 top-7 z-10 bg-gray-800 rounded shadow-lg border border-gray-700 p-1 flex flex-col gap-1 min-w-[120px] ">
+                        {#if node.num != $myNodeNum}
+                        <button 
+                            class="btn text-xs py-1 px-2 text-left whitespace-nowrap"
+                            on:click={() => {
+                              $setPositionMode = true; $setPositionForNodeNum = node.num;
+                              expandedNodeMenu = null
+                            }}
+                            title="Override position for this node"
+                          >
+                            📍 Override position
+                          </button>
+                        {#if hasOverridePosition(node.num)}
+                            <button 
+                              class="btn text-xs py-1 px-2 text-left bg-red-600/50 hover:bg-red-700 whitespace-nowrap"
+                              on:click={() => {
+                                ClearOverridePosition(node.num)
+                                expandedNodeMenu = null
+                              }}
+                              title="Clear override position"
+                            >
+                              🔓 Clear override position
+                            </button>
+                          {/if}
+                        {/if}
+                        
+                      </div>
+                    {/if}
+                  </div>
+
             </div>
 
             {#if node.environmentMetrics}

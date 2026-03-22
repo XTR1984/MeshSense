@@ -1,4 +1,4 @@
-import { accessKey, apiHostname, broadcastId, lastFromRadio, nodes, packets, type NodeInfo } from 'api/src/vars'
+import { accessKey, apiHostname, broadcastId, lastFromRadio, nodes, packets, type NodeInfo, positionOverrides, type OverridePosition } from 'api/src/vars'
 import { tick } from 'svelte'
 import { derived, get, writable } from 'svelte/store'
 import { enableAudioAlerts } from '../Settings.svelte'
@@ -68,9 +68,28 @@ export function scrollToBottom(element: HTMLElement, force?, notifyUnseen: (reco
 }
 
 export function getCoordinates(node: NodeInfo | number) {
-  if (typeof node == 'number') node = getNodeById(node)
+  let posOverride = undefined;
+  if (typeof node == 'number') {
+    node = getNodeById(node)
+    posOverride = positionOverrides.value.find((n) => n.num == node.num) || undefined;
+  }
+  else {
+    posOverride = positionOverrides.value.find((n) => n.num == node.num) || undefined;
+  }
+  if (posOverride?.latitudeI) return [posOverride.longitudeI/ 10000000, posOverride.latitudeI/ 10000000];
   if (!node?.position?.longitudeI) return [node?.approximatePosition?.longitude, node?.approximatePosition?.latitude]
   return [node?.position?.longitudeI / 10000000, node?.position?.latitudeI / 10000000]
+}
+
+export function OverrideNodeCoordinates(num: number, latitude: number, longitude: number) {
+  let latitudeI = Math.round(latitude * 10000000)
+  let longitudeI = Math.round(longitude * 10000000)
+  let  pos:OverridePosition = {
+    num: num,
+    latitudeI: latitudeI,
+    longitudeI: longitudeI
+  };
+  positionOverrides.upsert(pos);
 }
 
 export function getNodeById(num: number) {

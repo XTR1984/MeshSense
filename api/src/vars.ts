@@ -28,7 +28,7 @@ export let meshMapForwarding = new State<boolean>('meshMapForwarding', false, { 
 export let messageDestination = new State<number>('messageDestination', 0, { persist: true });
 export let routeDisplayMode = new State<string>('routeDisplayMode', 'all', { persist: true })
 export let useHomoglyphs = new State<boolean>('useHomoglyphs', false, { persist: true })
-
+export let positionOverrides = new State<OverridePosition[]>('positionOverrides',[], {primaryKey:'num' , persist:true }  )
 
 /** Measured in minutes */
 export let tracerouteRateLimit = new State<number>('tracerouteRateLimit', 60, { persist: true })
@@ -94,6 +94,12 @@ export type Position = {
   nextUpdate: number
   seqNumber: number
   precisionBits: number
+}
+
+export type OverridePosition = {
+  num: number
+  latitudeI: number
+  longitudeI: number
 }
 
 export type DeviceMetrics = {
