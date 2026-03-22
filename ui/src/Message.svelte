@@ -40,7 +40,7 @@
       return text.split('').map(char => homoglyphMap[char] || char).join('');
     }  
     
-  $: processedMessage = useHomoglyphs ? replaceWithHomoglyphs(message) : message;
+  $: processedMessage = $useHomoglyphs ? replaceWithHomoglyphs(message) : message;
   $: maxLength = 230 - ($messagePrefix?.length || 0) - ($messageSuffix?.length || 0)
   $: remainingChars = maxLength - getByteLength(processedMessage);
   $: charCountClass = remainingChars <= 0 ? 'text-red-700' : remainingChars <= 40 ? 'text-yellow-700' : 'text-gray-600'
