@@ -26,7 +26,8 @@
     myNodeMetadata,
     myNodeNum,
     meshMapForwarding,
-    useHomoglyphs
+    useHomoglyphs,
+    useExtremeHomoglyphs
   } from 'api/src/vars'
   import { hasAccess, userKey, blockUserKey, getNodeById, displayFahrenheit } from './lib/util'
   import { State } from 'api/src/lib/state'
@@ -142,6 +143,12 @@
       <input type="checkbox" bind:checked={$useHomoglyphs} />
       <div class="font-bold">Use homoglyphs</div>
     </label>
+
+    <label class="flex gap-2">
+      <input type="checkbox" bind:checked={$useExtremeHomoglyphs} />
+      <div class="font-bold">Use exTremE homoglyphs</div>
+    </label>
+
 
     <label class="flex gap-2">
       <input type="checkbox" bind:checked={$highlightOwnNode} />

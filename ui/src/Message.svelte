@@ -4,7 +4,7 @@
 </script>
 
 <script lang="ts">
-  import { channels, messagePrefix, messageSuffix, messageDestination, useHomoglyphs   } from 'api/src/vars'
+  import { channels, messagePrefix, messageSuffix, messageDestination, useHomoglyphs, useExtremeHomoglyphs   } from 'api/src/vars'
   import Card from './lib/Card.svelte'
   import { filteredNodes, smallMode } from './Nodes.svelte'
   import axios from 'axios'
@@ -21,23 +21,33 @@
   }
 
   function replaceWithHomoglyphs(text: string): string {
-    const homoglyphMap: { [key: string]: string } = {
+    const minorHomoglyphs: { [key: string]: string } = {
       'а': 'a', 'А': 'A',
                 'В': 'B',
       'е': 'e', 'Е': 'E',
       'ё': 'e', 'Ё': 'E',
-      'и': 'u', 'З': '3',
-      'к': 'k', 'К': 'K',
+                'К': 'K',
                 'М': 'M',
                 'Н': 'H',
       'о': 'o', 'О': 'O',
       'р': 'p', 'Р': 'P',
       'с': 'c', 'С': 'C',
-      'т': 'm', 'Т': 'T',
+                'Т': 'T',
       'у': 'y',
       'х': 'x', 'Х': 'X',
       };
-      return text.split('').map(char => homoglyphMap[char] || char).join('');
+      
+      const majorHomoglyphs: { [key: string]: string } = {
+      'и': 'u', 'З': '3',
+      'к': 'k', 'У': 'Y', 
+      'т': 'm', 
+      };
+
+      const fullMap = $useExtremeHomoglyphs 
+        ? { ...minorHomoglyphs, ...majorHomoglyphs }
+        : minorHomoglyphs;
+
+      return text.split('').map(char => fullMap[char] || char).join('');
     }  
     
   $: processedMessage = $useHomoglyphs ? replaceWithHomoglyphs(message) : message;
