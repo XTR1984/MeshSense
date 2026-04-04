@@ -14,6 +14,8 @@
 
   let inputElement: HTMLInputElement
   let message = ''
+  let debounceTimer: NodeJS.Timeout | null = null
+  let remainingChars = 230
 
   function getByteLength(str) {
     if (!str) return 0;
@@ -49,10 +51,25 @@
 
       return text.split('').map(char => fullMap[char] || char).join('');
     }  
+
+  function updateRemainingChars(rawMessage: string) {
+    const processed = $useHomoglyphs ? replaceWithHomoglyphs(rawMessage) : rawMessage;
+    const maxLength = 230 - ($messagePrefix?.length || 0) - ($messageSuffix?.length || 0)
+    remainingChars = maxLength - getByteLength(processed);
+  }
+
+  function handleMessageChange(newValue: string) {
+    message = newValue
     
-  $: processedMessage = $useHomoglyphs ? replaceWithHomoglyphs(message) : message;
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      updateRemainingChars(message)
+    }, 150)
+  }
+
+
   $: maxLength = 230 - ($messagePrefix?.length || 0) - ($messageSuffix?.length || 0)
-  $: remainingChars = maxLength - getByteLength(processedMessage);
+
   $: charCountClass = remainingChars <= 0 ? 'text-red-700' : remainingChars <= 40 ? 'text-yellow-700' : 'text-gray-600'
 
   $: if (inputElement && $messageDestination || $replyToId) {
@@ -116,7 +133,9 @@
 
   <form on:submit|preventDefault={send} class="p-2 flex flex-col gap-1 text-sm">
     <div class="flex gap-1" class:flex-col={$smallMode}>
-      <input maxlength={maxLength} bind:this={inputElement} class="input w-full" size="3" type="text" bind:value={message}/>
+      <input maxlength={maxLength} bind:this={inputElement} class="input w-full" size="3" type="text" bind:value={message}
+      on:input={(e) => handleMessageChange(e.currentTarget.value)}      
+      />
       {#if $replyToId}
       <div class="flex items-center gap-2">
         <button class="btn">
