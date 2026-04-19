@@ -186,7 +186,7 @@ export async function disconnect(setIntent = true) {
 }
 
 export function reset() {
-  nodes.set([])
+  //nodes.set([])
   packets.set([])
   channels.set([])
   myNodeNum.set(undefined)
