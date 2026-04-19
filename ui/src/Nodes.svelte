@@ -50,7 +50,7 @@
 
   function filterNodes() {
     $inactiveNodes = $nodes.filter(isInactive)
-
+    expandedNodeMenu = null
     $filteredNodes = $nodes
       .filter((node) => {
         switch ($nodeVisibilityMode) {
@@ -151,6 +151,22 @@
         return $sortDirection === 'asc' ? aValue - bValue : bValue - aValue
       })
   }
+
+  function addNodeToFilter(nodeNum) {
+    $filterText = nodeNum.toString(16).toUpperCase()
+    focusNodeFilter()
+  }
+
+  async function deleteNodeFromDB(nodeNum) {
+  if (confirm(`Are you sure you want to delete node ${nodeNum} from database?`)) {
+    try {
+      await axios.post('/deleteNodes', { nodes: [{ num: nodeNum }] })
+      filterNodes()
+    } catch (error) {
+      console.error('Failed to delete node:', error)
+    }
+  }
+ }
 
   function clearNodes() {
     axios.post('/deleteNodes', { nodes: $inactiveNodes })
@@ -334,10 +350,16 @@
   {#if !$smallMode}
     <div class="grid m-2">
       <input type="text" placeholder="Node Filter..." bind:value={$filterText} class="input" bind:this={nodeFilterInput}/>
+      {#if $filterText.length > 0}
+      <button 
+        on:click={() => $filterText = ''}
+      >✕</button>
+    {/if}
     </div>
   {/if}
     <div class="p-1 text-sm grid gap-1 overflow-visible h-full content-start">
       {#each $filteredNodes as node (node.num)}
+      <div class="relative">
         <div
           class:ring-1={node.hopsAway == 0}
           class="bg-blue-300/10 rounded px-1 py-0.5 flex flex-col gap-0.5 {node.num == $myNodeNum
@@ -452,7 +474,13 @@
               <!-- Hops -->
               <div title="{node.hopsAway} Hops Away" class="text-sm font-normal bg-black/20 rounded p-1 w-6 h-7 text-center">{node.num == $myNodeNum ? '-' : (node.hopsAway ?? '?')}</div>
 
-              <button title="Node Detail" on:click={() => (selectedNode = node)}>🔍</button>
+              <button 
+               on:click={() => {
+                 addNodeToFilter(node.num);
+               }} 
+               title="to filter">🔍
+               </button>                       
+
               <!-- <button class="h-7 w-5" on:click={() => send(prompt('Enter message to send'), node.num)}>🗨</button> -->
 
               {#if node.num != $myNodeNum}
@@ -510,35 +538,7 @@
              >⚙️</button>
               {/if}
                     
-                    {#if expandedNodeMenu === node.num}
-                      <div class="absolute right-0 top-7 z-10 bg-gray-800 rounded shadow-lg border border-gray-700 p-1 flex flex-col gap-1 min-w-[120px] ">
-                        {#if node.num != $myNodeNum}
-                        <button 
-                            class="btn text-xs py-1 px-2 text-left whitespace-nowrap"
-                            on:click={() => {
-                              $setPositionMode = true; $setPositionForNodeNum = node.num;
-                              expandedNodeMenu = null
-                            }}
-                            title="Override position for this node"
-                          >
-                            📍 Override position
-                          </button>
-                        {#if hasOverridePosition(node.num)}
-                            <button 
-                              class="btn text-xs py-1 px-2 text-left bg-red-600/50 hover:bg-red-700 whitespace-nowrap"
-                              on:click={() => {
-                                ClearOverridePosition(node.num)
-                                expandedNodeMenu = null
-                              }}
-                              title="Clear override position"
-                            >
-                              🔓 Clear override position
-                            </button>
-                          {/if}
-                        {/if}
-                        
-                      </div>
-                    {/if}
+
                   </div>
 
             </div>
@@ -574,6 +574,66 @@
             {/if}
           {/if}
         </div>
+
+        {#if expandedNodeMenu === node.num}
+        <div class="absolute right-0 top-12 z-10 bg-gray-800 rounded shadow-lg border border-gray-700 p-1 flex flex-col gap-1 min-w-[120px] ocacity-100">
+          {#if node.num != $myNodeNum}
+            <button  class="btn text-xs py-1 px-2 text-left whitespace-nowrap"
+                title="Node Detail" on:click={() => {selectedNode = node; expandedNodeMenu = null}}>🔍 Node details</button>
+
+
+            <button 
+              class="btn text-xs py-1 px-2 text-left whitespace-nowrap"
+              on:click={() => {
+                $setPositionMode = true; $setPositionForNodeNum = node.num;
+                expandedNodeMenu = null
+              }}
+              title="Override position for this node"
+            >
+              📍 Override position
+            </button>
+
+            {#if hasOverridePosition(node.num)}
+               <button 
+                  class="btn text-xs py-1 px-2 text-left bg-red-600/50 hover:bg-red-700 whitespace-nowrap"
+                  on:click={() => {
+                    ClearOverridePosition(node.num)
+                    expandedNodeMenu = null
+                  }}
+                  title="Clear override position"
+                >
+                  🔓 Clear override position
+              </button>
+             {/if}
+
+           <button
+             class="btn text-xs py-1 px-2 text-left bg-red-600/50 hover:bg-red-700 whitespace-nowrap"
+             title="Request Position"
+             on:click={(e) => {
+               axios.post('/requestPosition', { destination: node.num });
+               expandedNodeMenu = null
+             }}
+             >📡 Request position
+           </button>
+
+           <button 
+             class="btn text-xs py-1 px-2 text-left bg-red-600/50 hover:bg-red-700 whitespace-nowrap"
+             on:click={() => {
+               deleteNodeFromDB(node.num);
+               expandedNodeMenu = null
+             }}
+             title="Delete node from database"
+           >
+             🗑️ Delete node
+           </button>
+
+          {/if}
+          
+        </div>
+      {/if}
+      </div>
+      
+        
       {/each}
       {#if $hasAccess && $nodeVisibilityMode !== 'active' && $inactiveNodes.length >= 10}
         <button on:click={clearNodes} class="btn h-12">Clear {$inactiveNodes?.length} Inactive Nodes</button>
