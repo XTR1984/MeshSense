@@ -98,6 +98,10 @@
   function getType(packet: MeshPacket) {
     if (packet.payloadVariant?.case == 'encrypted') return 'Encrypted'
     if (packet.message) return 'Message'
+    if (packet.neighbors) return 'Neighbors'
+    if (packet.payloadVariant?.value?.portnum== 8) return 'Waypoint'
+    if (packet.payloadVariant?.value?.portnum== 65) return 'S&F'
+    if (packet.event) return 'Event'
     return (packet.data?.variant?.value?.$typeName ?? packet.data?.$typeName)?.replace('meshtastic.', '')
   }
 
@@ -112,6 +116,14 @@
     let long = packet.data.longitudeI / 10000000
     ol.showPin(description, long, lat, icon)
   }
+  function showEventPin(packet: MeshPacket) {
+    let description = String.fromCodePoint(packet.json.data.icon) + " " + packet.json.data.description + ":" + packet.json.data.description
+    //let icon = getSvgUri(String(node.num))
+    let lat = packet.json.data.latitudeI / 10000000
+    let long = packet.json.data.longitudeI / 10000000
+    ol.showPin(description, long, lat,undefined, 0)
+  }
+
 </script>
 
 <Modal title="Packet Detail" visible={selectedPacket != undefined}>
@@ -136,6 +148,30 @@
   <div bind:this={packetsDiv} class="p-1 px-2 text-sm overflow-auto grid h-full content-start overflow-x-hidden">
     {#each $packets.filter((p) => shouldPacketBeShown(p, includeTx, filterText)) || [] as packet}
       {#if !messagesOnly || packet.message?.show}
+        {#if packet.event}
+        <div class="flex gap-2 whitespace-nowrap {($highlightOwnNode && packet.from === $myNodeNum) ? 'text-white/90' : ''}">
+          <div class="w-28"></div>
+          <div class="w-44 flex gap-1 overflow-hidden">
+            <div class="">
+              <img class="h-4 inline-block" src={getSvgUri(String(packet.json.from))} alt="Node {packet.json.from}" />
+              {getNodeNameById(packet.json.from)}
+            </div>
+          </div>
+          <div class="w-7">{packet.json.channel}</div>
+          <div class="w-10"></div>
+          <div class="w-10"></div>
+          <div class="w-36">Event</div>
+          <div class="w-10"></div>          
+          <div class="w-8">
+            <button on:click={() => (selectedPacket = packet)}>🔍</button>
+              <button title="Fly To" on:click={() => showEventPin(packet)}>🌐</button>
+          </div>
+          <div class="bg-teal-800/60 rounded px-1 my-0.5 text-xs ring-0 text-teal-200 mx-2 w-fit">
+            ({(packet.json.data.latitudeI / 10000000).toFixed(3)}, {(packet.json.data.longitudeI / 10000000).toFixed(3)}) 
+          </div>
+          {String.fromCodePoint(packet.json.data.icon)} {packet.json.data.name}: {packet.json.data.description}
+        </div>
+        {:else}
         <div class="flex gap-2 whitespace-nowrap {($highlightOwnNode && packet.from === $myNodeNum) ? 'text-white/90' : ''}">
           <div class="w-28">{packet.rxTime ? new Date(packet.rxTime * 1000).toLocaleString(undefined, { day: 'numeric', month: 'numeric', hour: 'numeric', minute: 'numeric' }) : ''}</div>
 
@@ -269,7 +305,9 @@
             </div>
           {/if}
         </div>
+        {/if}
       {/if}
+
       {#if packet.message?.show}
         {@const replyId = getReplyId(packet)}
         {@const replyText = getReplyText(packet)}

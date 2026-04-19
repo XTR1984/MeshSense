@@ -167,9 +167,9 @@
     })
   }
 
-  export function showPin(description?: string, long?: number, lat?: number, icon?: string) {
+  export function showPin(description?: string, long?: number, lat?: number, icon?: string, timeout?:number) {
     if (long == undefined || lat == undefined) return
-
+    if (timeout == undefined) timeout = 60000;
     let layer = new VectorLayer({
       source: new Vector({
         features: [
@@ -201,7 +201,7 @@
     })
 
     map.addLayer(layer)
-    setTimeout(() => map.removeLayer(layer), 60000)
+    if (timeout) setTimeout(() => map.removeLayer(layer), timeout)
 
     flyTo(long, lat)
   }
