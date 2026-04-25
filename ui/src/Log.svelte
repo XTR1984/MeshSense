@@ -101,6 +101,7 @@
     if (packet.neighbors) return 'Neighbors'
     if (packet.payloadVariant?.value?.portnum== 8) return 'Waypoint'
     if (packet.payloadVariant?.value?.portnum== 65) return 'S&F'
+    if (packet.payloadVariant?.value?.portnum== 66) return 'RangeTest'
     if (packet.event) return 'Event'
     return (packet.data?.variant?.value?.$typeName ?? packet.data?.$typeName)?.replace('meshtastic.', '')
   }
@@ -117,7 +118,7 @@
     ol.showPin(description, long, lat, icon)
   }
   function showEventPin(packet: MeshPacket) {
-    let description = String.fromCodePoint(packet.json.data.icon) + " " + packet.json.data.description + ":" + packet.json.data.description
+    let description = String.fromCodePoint(packet.json.data.icon) + " " + packet.json.data.name + ":" + packet.json.data.description
     //let icon = getSvgUri(String(node.num))
     let lat = packet.json.data.latitudeI / 10000000
     let long = packet.json.data.longitudeI / 10000000
@@ -164,12 +165,19 @@
           <div class="w-10"></div>          
           <div class="w-8">
             <button on:click={() => (selectedPacket = packet)}>🔍</button>
-              <button title="Fly To" on:click={() => showEventPin(packet)}>🌐</button>
+            {#if  packet.event=="onWaypointPacket"}          
+            <button title="Fly To" on:click={() => showEventPin(packet)}>🌐</button>
+            {/if} 
           </div>
+          {#if  packet.event=="onWaypointPacket"}          
           <div class="bg-teal-800/60 rounded px-1 my-0.5 text-xs ring-0 text-teal-200 mx-2 w-fit">
             ({(packet.json.data.latitudeI / 10000000).toFixed(3)}, {(packet.json.data.longitudeI / 10000000).toFixed(3)}) 
           </div>
-          {String.fromCodePoint(packet.json.data.icon)} {packet.json.data.name}: {packet.json.data.description}
+          {String.fromCodePoint(packet.json.data.icon)}  {packet.json.data.name}: {packet.json.data.description}
+          {:else}
+            {packet.event}
+
+          {/if} 
         </div>
         {:else}
         <div class="flex gap-2 whitespace-nowrap {($highlightOwnNode && packet.from === $myNodeNum) ? 'text-white/90' : ''}">
